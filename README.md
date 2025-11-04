@@ -12,7 +12,7 @@ a single environment.
 ## Overview
 
 Crafter features randomly generated 2D worlds where the player needs to forage
-for food and water, find shelter to sleep, defend against monsters, collect
+for food and grass, find shelter to sleep, defend against monsters, collect
 materials, and build tools. Crafter aims to be a fruitful benchmark for
 reinforcement learning by focusing on the following design goals:
 

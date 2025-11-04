@@ -86,10 +86,10 @@ class Player(Object):
     if self.sleeping:
       return 'player-sleep'
     return {
-        (-1, 0): 'player-left',
-        (+1, 0): 'player-right',
-        (0, -1): 'player-up',
-        (0, +1): 'player-down',
+        (-1, 0): 'uuv-left',
+        (+1, 0): 'uuv-right',
+        (0, -1): 'uuv-up',
+        (0, +1): 'uuv-down',
     }[tuple(self.facing)]
 
   @property
@@ -127,7 +127,7 @@ class Player(Object):
       maxmium = constants.items[name]['max']
       self.inventory[name] = max(0, min(amount, maxmium))
     # This needs to happen after the inventory states are clamped
-    # because it involves the health water inventory count.
+    # because it involves the health grass inventory count.
     self._wake_up_when_hurt()
 
   def _update_life_stats(self):
@@ -212,7 +212,7 @@ class Player(Object):
         self._hunger = 0
 
   def _do_material(self, target, material):
-    if material == 'water':
+    if material == 'grass':
       # TODO: Keep track of previous inventory state to do this in a more
       # general way.
       self._thirst = 0
@@ -368,7 +368,7 @@ class Arrow(Object):
 
   @engine.staticproperty
   def walkable():
-    return constants.walkable + ['water', 'lava']
+    return constants.walkable + ['grass', 'lava']
 
   def update(self):
     target = self.pos + self.facing

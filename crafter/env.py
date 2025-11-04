@@ -141,7 +141,7 @@ class Env(BaseClass):
   def _balance_chunk(self, chunk, objs):
     light = self._world.daylight
     self._balance_object(
-        chunk, objs, objects.Zombie, 'grass', 6, 0, 0.3, 0.4,
+        chunk, objs, objects.Zombie, 'water', 6, 0, 0.3, 0.4,
         lambda pos: objects.Zombie(self._world, pos, self._player),
         lambda num, space: (
             0 if space < 50 else 3.5 - 3 * light, 3.5 - 3 * light))
@@ -150,7 +150,7 @@ class Env(BaseClass):
         lambda pos: objects.Skeleton(self._world, pos, self._player),
         lambda num, space: (0 if space < 6 else 1, 2))
     self._balance_object(
-        chunk, objs, objects.Cow, 'grass', 5, 5, 0.01, 0.1,
+        chunk, objs, objects.Cow, 'water', 5, 5, 0.01, 0.1,
         lambda pos: objects.Cow(self._world, pos),
         lambda num, space: (0 if space < 30 else 1, 1.5 + light))
 
