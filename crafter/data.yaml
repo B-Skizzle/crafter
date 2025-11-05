@@ -25,6 +25,7 @@ materials:
   - sand
   - tree
   - lava
+  - mine
   - coal
   - iron
   - diamond
@@ -34,6 +35,7 @@ materials:
 walkable:
   - water
   - path
+  - mine
 #  - sand
 
 items:

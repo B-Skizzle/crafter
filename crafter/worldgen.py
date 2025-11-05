@@ -57,6 +57,8 @@ def _set_material(world, pos, player, tunnels, simplex):
   else:  # waterland
     if simplex(x, y, 5, 7) > 0 and uniform() > 0.8:
       world[x, y] = 'tree'
+    elif uniform() > 0.98:  # 2% chance for a mine
+      world[x, y] = 'mine'
     else:
       world[x, y] = 'water'
 

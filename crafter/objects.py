@@ -177,6 +177,9 @@ class Player(Object):
     self.move(self.facing)
     if self.world[self.pos][0] == 'lava':
       self.health = 0
+    if self.world[self.pos][0] == 'mine':
+      self.health = 0
+      self.world[self.pos] = 'water'  # Mine becomes empty ground after exploding
 
   def _do_object(self, obj):
     damage = max([
