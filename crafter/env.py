@@ -87,6 +87,7 @@ class Env(BaseClass):
     # Handle movement cooldown from shallow water terrain
     if self._player.movement_cooldown > 0:
       self._player.movement_cooldown -= 1
+      self._player.action = 'noop'  # Force player to do nothing during cooldown
       # Skip player action but still update world
       for obj in self._world.objects:
         if self._player.distance(obj) < 2 * max(self._view):
