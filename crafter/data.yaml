@@ -36,6 +36,8 @@ walkable:
   - water
   - path
   - mine
+  - stone  # Shallow water (slow)
+  - coal   # Shallow water (slower)
 #  - sand
 
 items:

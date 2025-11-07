@@ -83,10 +83,21 @@ class Env(BaseClass):
   def step(self, action):
     self._step += 1
     self._update_time()
-    self._player.action = constants.actions[action]
-    for obj in self._world.objects:
-      if self._player.distance(obj) < 2 * max(self._view):
-        obj.update()
+
+    # Handle movement cooldown from shallow water terrain
+    if self._player.movement_cooldown > 0:
+      self._player.movement_cooldown -= 1
+      # Skip player action but still update world
+      for obj in self._world.objects:
+        if self._player.distance(obj) < 2 * max(self._view):
+          obj.update()
+    else:
+      # Normal action processing
+      self._player.action = constants.actions[action]
+      for obj in self._world.objects:
+        if self._player.distance(obj) < 2 * max(self._view):
+          obj.update()
+
     if self._step % 10 == 0:
       for chunk, objs in self._world.chunks.items():
         # xmin, xmax, ymin, ymax = chunk

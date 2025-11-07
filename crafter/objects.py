@@ -80,6 +80,7 @@ class Player(Object):
     self._thirst = 0
     self._fatigue = 0
     self._recover = 0
+    self.movement_cooldown = 0  # For terrain-based movement delays
 
   @property
   def texture(self):
@@ -174,7 +175,15 @@ class Player(Object):
   def _move(self, direction):
     directions = dict(left=(-1, 0), right=(+1, 0), up=(0, -1), down=(0, +1))
     self.facing = directions[direction]
-    self.move(self.facing)
+    moved = self.move(self.facing)
+    if moved:
+      # Set movement cooldown based on terrain type (shallow water = slower)
+      material = self.world[self.pos][0]
+      movement_costs = {
+        'stone': 1,  # Shallow water - 2x slower (skip 1 action)
+        'coal': 2,   # Very shallow water - 3x slower (skip 2 actions)
+      }
+      self.movement_cooldown = movement_costs.get(material, 0)
     if self.world[self.pos][0] == 'lava':
       self.health = 0
     if self.world[self.pos][0] == 'mine':
