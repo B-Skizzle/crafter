@@ -140,7 +140,7 @@ class Player(Object):
     self._wake_up_when_hurt()
     # Check if player just died and trigger death delay
     if self.health <= 0 and self.death_delay == 0:
-      self.death_delay = 3
+      self.death_delay = 10  # Show explosion for 2 seconds at 5 FPS (default)
 
   def _update_life_stats(self):
     self._hunger += 0.5 if self.sleeping else 1
@@ -206,11 +206,11 @@ class Player(Object):
     
     if self.world[self.pos][0] == 'lava':
       if self.health > 0:  # Only trigger death delay once
-        self.death_delay = 3  # Show explosion for ~3 seconds at 10 FPS
+        self.death_delay = 10  # Show explosion for 2 seconds at 5 FPS (default)
       self.health = 0
     if self.world[self.pos][0] == 'mine':
       if self.health > 0:  # Only trigger death delay once
-        self.death_delay = 3  # Show explosion for ~3 seconds at 10 FPS
+        self.death_delay = 10  # Show explosion for 2 seconds at 5 FPS (default)
       self.health = 0
       self.world[self.pos] = 'water'  # Mine becomes empty ground after exploding
 
