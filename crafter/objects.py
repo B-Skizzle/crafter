@@ -80,16 +80,25 @@ class Player(Object):
     self._thirst = 0
     self._fatigue = 0
     self._recover = 0
+    self.movement_cooldown = 0  # Add this
+    self.death_delay = 0  # Delay before game resets after death
 
   @property
   def texture(self):
+    if self.health <= 0:
+      return {
+          (-1, 0): 'player_boat_explosion_left',
+          (+1, 0): 'player_boat_explosion_right',
+          (0, -1): 'player_boat_explosion_up',
+          (0, +1): 'player_boat_explosion_down',
+      }[tuple(self.facing)]
     if self.sleeping:
       return 'player-sleep'
     return {
-        (-1, 0): 'player-left',
-        (+1, 0): 'player-right',
-        (0, -1): 'player-up',
-        (0, +1): 'player-down',
+        (-1, 0): 'player_boat_left',
+        (+1, 0): 'player_boat_right',
+        (0, -1): 'player_boat_up',
+        (0, +1): 'player_boat_down',
     }[tuple(self.facing)]
 
   @property
@@ -127,8 +136,11 @@ class Player(Object):
       maxmium = constants.items[name]['max']
       self.inventory[name] = max(0, min(amount, maxmium))
     # This needs to happen after the inventory states are clamped
-    # because it involves the health water inventory count.
+    # because it involves the health grass inventory count.
     self._wake_up_when_hurt()
+    # Check if player just died and trigger death delay
+    if self.health <= 0 and self.death_delay == 0:
+      self.death_delay = 3
 
   def _update_life_stats(self):
     self._hunger += 0.5 if self.sleeping else 1
@@ -174,9 +186,33 @@ class Player(Object):
   def _move(self, direction):
     directions = dict(left=(-1, 0), right=(+1, 0), up=(0, -1), down=(0, +1))
     self.facing = directions[direction]
-    self.move(self.facing)
+    moved = self.move(self.facing)  # CHANGED: Now we remember if we moved
+    
+    if moved:  # NEW: Only do this if we actually moved
+      # NEW: Check what ground we're standing on
+      material = self.world[self.pos][0]
+      
+      # NEW: This dictionary is like a price list
+      movement_costs = {
+        'stone': 2,  # Costs 2 wait-turns
+        'coal': 2,   # Costs 2 wait-turns
+        'path': 1,
+        'diamond': 2,
+        'iron': 2,
+      }
+      
+      # NEW: Set the timer based on what we stepped on
+      self.movement_cooldown = movement_costs.get(material, 0)
+    
     if self.world[self.pos][0] == 'lava':
+      if self.health > 0:  # Only trigger death delay once
+        self.death_delay = 3  # Show explosion for ~3 seconds at 10 FPS
       self.health = 0
+    if self.world[self.pos][0] == 'mine':
+      if self.health > 0:  # Only trigger death delay once
+        self.death_delay = 3  # Show explosion for ~3 seconds at 10 FPS
+      self.health = 0
+      self.world[self.pos] = 'water'  # Mine becomes empty ground after exploding
 
   def _do_object(self, obj):
     damage = max([
@@ -198,10 +234,10 @@ class Player(Object):
       obj.health -= damage
       if obj.health <= 0:
         self.achievements['defeat_zombie'] += 1
-    if isinstance(obj, Skeleton):
+    if isinstance(obj, EnemyBoat):
       obj.health -= damage
       if obj.health <= 0:
-        self.achievements['defeat_skeleton'] += 1
+        self.achievements['defeat_enemy_boat'] += 1
     if isinstance(obj, Cow):
       obj.health -= damage
       if obj.health <= 0:
@@ -212,7 +248,7 @@ class Player(Object):
         self._hunger = 0
 
   def _do_material(self, target, material):
-    if material == 'water':
+    if material == 'grass':
       # TODO: Keep track of previous inventory state to do this in a more
       # general way.
       self._thirst = 0
@@ -312,17 +348,23 @@ class Zombie(Object):
         self.cooldown = 5
 
 
-class Skeleton(Object):
+class EnemyBoat(Object):
 
   def __init__(self, world, pos, player):
     super().__init__(world, pos)
     self.player = player
     self.health = 3
     self.reload = 0
+    self.facing = (0, 1)  # Default facing down
 
   @property
   def texture(self):
-    return 'skeleton'
+    return {
+        (-1, 0): 'enemy_boat_left',
+        (+1, 0): 'enemy_boat_right',
+        (0, -1): 'enemy_boat_up',
+        (0, +1): 'enemy_boat_down',
+    }[tuple(self.facing)]
 
   def update(self):
     if self.health <= 0:
@@ -330,15 +372,25 @@ class Skeleton(Object):
     self.reload = max(0, self.reload - 1)
     dist = self.distance(self.player.pos)
     if dist <= 3:
-      moved = self.move(-self.toward(self.player, self.random.uniform() < 0.6))
+      direction = -self.toward(self.player, self.random.uniform() < 0.6)
+      moved = self.move(direction)
       if moved:
+        self.facing = direction
         return
     if dist <= 5 and self.random.uniform() < 0.5:
-      self._shoot(self.toward(self.player))
+      shoot_dir = self.toward(self.player)
+      self._shoot(shoot_dir)
+      self.facing = shoot_dir
     elif dist <= 8 and self.random.uniform() < 0.3:
-      self.move(self.toward(self.player, self.random.uniform() < 0.6))
+      direction = self.toward(self.player, self.random.uniform() < 0.6)
+      moved = self.move(direction)
+      if moved:
+        self.facing = direction
     elif self.random.uniform() < 0.2:
-      self.move(self.random_dir())
+      direction = self.random_dir()
+      moved = self.move(direction)
+      if moved:
+        self.facing = direction
 
   def _shoot(self, direction):
     if self.reload > 0:
@@ -346,12 +398,12 @@ class Skeleton(Object):
     if direction[0] == 0 and direction[1] == 0:
       return
     pos = self.pos + direction
-    if self.is_free(pos, Arrow.walkable):
-      self.world.add(Arrow(self.world, pos, direction))
+    if self.is_free(pos, Missile.walkable):
+      self.world.add(Missile(self.world, pos, direction))
       self.reload = 4
 
 
-class Arrow(Object):
+class Missile(Object):
 
   def __init__(self, world, pos, facing):
     super().__init__(world, pos)
@@ -360,15 +412,15 @@ class Arrow(Object):
   @property
   def texture(self):
     return {
-        (-1, 0): 'arrow-left',
-        (+1, 0): 'arrow-right',
-        (0, -1): 'arrow-up',
-        (0, +1): 'arrow-down',
+        (-1, 0): 'missile_left',
+        (+1, 0): 'missile_right',
+        (0, -1): 'missile_up',
+        (0, +1): 'missile_down',
     }[tuple(self.facing)]
 
   @engine.staticproperty
   def walkable():
-    return constants.walkable + ['water', 'lava']
+    return constants.walkable + ['grass', 'lava']
 
   def update(self):
     target = self.pos + self.facing
@@ -405,7 +457,7 @@ class Plant(Object):
   def update(self):
     self.grown += 1
     objs = [self.world[self.pos + dir_][1] for dir_ in self.all_dirs]
-    if any(isinstance(obj, (Zombie, Skeleton, Cow)) for obj in objs):
+    if any(isinstance(obj, (Zombie, EnemyBoat, Cow)) for obj in objs):
       self.health -= 1
     if self.health <= 0:
       self.world.remove(self)

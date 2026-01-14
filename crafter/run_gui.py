@@ -1,5 +1,5 @@
 import argparse
-
+import os
 import numpy as np
 try:
   import pygame
@@ -47,6 +47,8 @@ def main():
       pygame.K_4: 'make_wood_sword',
       pygame.K_5: 'make_stone_sword',
       pygame.K_6: 'make_iron_sword',
+      pygame.K_F5: 'save_game',  # NEW: Press F5 to save
+      pygame.K_F9: 'load_game',  # NEW: Press F9 to load
   }
   print('Actions:')
   for key, action in keymap.items():
@@ -60,7 +62,7 @@ def main():
   size[1] = size[1] or args.window[1]
 
   env = crafter.Env(
-      area=args.area, view=args.view, length=args.length, seed=args.seed)
+      area=args.area, view=args.view, length=args.length, seed=args.seed, map_file='maps/level1.txt')
   env = crafter.Recorder(env, args.record)
   env.reset()
   achievements = set()
@@ -107,6 +109,21 @@ def main():
         else:
           action = 'noop'
 
+    # Handle save/load actions
+    if action == 'save_game':
+        os.makedirs('saves', exist_ok=True)  # Create 'saves' folder if it doesn't exist
+        save_path = f'saves/game_save.npz'
+        env.save_game(save_path)
+        action = 'noop'  # Don't do any game action this frame
+    elif action == 'load_game':
+        load_path = f'saves/game_save.npz'
+        if os.path.exists(load_path):
+            env.load_game(load_path)
+        else:
+            print("No save file found!")
+        action = 'noop'  # Don't do any game action this frame
+
+
     # Environment step.
     _, reward, done, _ = env.step(env.action_names.index(action))
     duration += 1
@@ -127,21 +144,23 @@ def main():
 
     # Episode end.
     if done and not was_done:
-      was_done = True
-      print('Episode done!')
-      print('Duration:', duration)
-      print('Return:', return_)
-      if args.death == 'quit':
-        running = False
-      if args.death == 'reset':
-        print('\nStarting a new episode.')
-        env.reset()
-        achievements = set()
-        was_done = False
-        duration = 0
-        return_ = 0
-      if args.death == 'continue':
-        pass
+      # Check if death_delay has finished (or player died from time limit)
+      if env._player.death_delay == 0:
+        was_done = True
+        print('Episode done!')
+        print('Duration:', duration)
+        print('Return:', return_)
+        if args.death == 'quit':
+          running = False
+        if args.death == 'reset':
+          print('\nStarting a new episode.')
+          env.reset()
+          achievements = set()
+          was_done = False
+          duration = 0
+          return_ = 0
+        if args.death == 'continue':
+          pass
 
   pygame.quit()
 

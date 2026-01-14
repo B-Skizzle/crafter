@@ -5,3 +5,5 @@ __pycache__/
 /*.png
 /*.mp4
 .DS_Store
+crafter/assets/outputs
+crafter/assets/generate_variants.py

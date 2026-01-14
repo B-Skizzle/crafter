@@ -12,7 +12,7 @@ a single environment.
 ## Overview
 
 Crafter features randomly generated 2D worlds where the player needs to forage
-for food and water, find shelter to sleep, defend against monsters, collect
+for food and grass, find shelter to sleep, defend against monsters, collect
 materials, and build tools. Crafter aims to be a fruitful benchmark for
 reinforcement learning by focusing on the following design goals:
 
@@ -68,6 +68,56 @@ python3 -m crafter.run_gui      # Start the game
 | 6 | Craft an iron sword |
 
 </details>
+
+
+
+
+## Custom maps, saving, and enemy settings (quick guide)
+
+
+### 1) Editing the map (the world layout)
+
+Where the map file is used:
+1. `crafter/run_gui.py` starts the game with a map file. It passes `map_file='maps/level1.txt'` into `crafter.Env(...)`.
+2. `crafter/env.py` loads that text file (called an ASCII map) when `map_file` is set, reads it into `self._ascii_map`, and also resizes the world to match the map’s width and height. 
+3. `crafter/worldgen.py` turns the ASCII map text into real terrain using `parse_ascii_map(...)`, then `generate_world(...)` applies it to the world. 
+
+What you actually edit:
+1. Open the map text file (example `maps/level1.txt`) and change the characters.
+2. The key legend (what each character means) is inside `parse_ascii_map` in `crafter/worldgen.py`.
+
+Character legend:
+1. `|` means grass
+2. `o` means stone
+3. `~` means water
+4. `.` means sand
+5. `@` means the player start spot (and the ground under it is water)
+6. `C` means a cow (on water)
+7. `Z` means a zombie (on water)
+8. `S` means a skeleton (on water)
+
+### 2) Saving and loading (F5 and F9)
+
+How it works:
+1. `run_gui.py` maps F5 to `save_game` and F9 to `load_game`. 
+2. When you press F5, it saves to `saves/game_save.npz`. When you press F9, it loads from `saves/game_save.npz`. 
+3. The real save and load code is in `crafter/env.py`:
+   1. `Env.save_game(filepath)` writes the world, the player, and all objects (cows, zombies, plants, etc.). 
+   2. `Env.load_game(filepath)` puts everything back into the world. 
+
+### 3) Enemy settings (JSON config)
+
+Where it is loaded:
+1. `crafter/env.py` loads enemy settings from a JSON file (default name is `enemy_config.json`) when the environment starts. 
+2. If the JSON file is missing, it uses built in defaults instead. 
+
+What you can change in `enemy_config.json`:
+1. Turn all enemies on or off with `enemies_enabled`. 
+2. Turn zombies or skeletons on or off with `zombie_settings.enabled` and `skeleton_settings.enabled`. 
+3. Change how often they show up during world generation with `worldgen_spawn_probability`.
+4. World generation uses these settings when it decides whether to place zombies or skeletons while building the map. 
+5. While you play, the “keep the right number of enemies around you” logic also checks the config before spawning zombies and skeletons. 
+
 
 ![Crafter Video](https://github.com/danijar/crafter/raw/main/media/video.gif)
 
@@ -165,9 +215,3 @@ implementations](https://github.com/danijar/crafter-baselines) are available as
 a separate repository.
 
 <img src="https://github.com/danijar/crafter/raw/main/media/scores.png" width="400"/>
-
-## Questions
-
-Please [open an issue][issues] on Github.
-
-[issues]: https://github.com/danijar/crafter/issues
