@@ -344,6 +344,9 @@ class Zombie(Object):
           damage = 7
         else:
           damage = 2
+        # Check if this hit will kill the player
+        if self.player.health - damage <= 0 and self.player.death_delay == 0:
+          self.player.death_delay = 10  # Show explosion for 2 seconds at 5 FPS (default)
         self.player.health -= damage
         self.cooldown = 5
 
@@ -426,6 +429,9 @@ class Missile(Object):
     target = self.pos + self.facing
     material, obj = self.world[target]
     if obj:
+      # Check if this hit will kill the target and if it's a player (has death_delay attribute)
+      if hasattr(obj, 'death_delay') and obj.health - 2 <= 0 and obj.death_delay == 0:
+        obj.death_delay = 10  # Show explosion for 2 seconds at 5 FPS (default)
       obj.health -= 2
       self.world.remove(self)
     elif material not in self.walkable:
